@@ -13,6 +13,11 @@ if [ "$1" = 'postgres' ]; then
 	chmod g+s /run/postgresql
 	chown -R postgres /run/postgresql
 
+
+        : ${POSTGRES_USER:=postgres}
+	: ${POSTGRES_DB:=$POSTGRES_USER}
+	export POSTGRES_USER POSTGRES_DB
+
 	# look specifically for PG_VERSION, as it is expected in the DB dir
 	if [ ! -s "$PGDATA/PG_VERSION" ]; then
 		gosu postgres initdb
@@ -50,9 +55,6 @@ if [ "$1" = 'postgres' ]; then
 			-o "-c listen_addresses=''" \
 			-w start
 
-		: ${POSTGRES_USER:=postgres}
-		: ${POSTGRES_DB:=$POSTGRES_USER}
-		export POSTGRES_USER POSTGRES_DB
 
 		if [ "$POSTGRES_DB" != 'postgres' ]; then
 			psql --username postgres <<-EOSQL
@@ -92,9 +94,8 @@ if [ "$1" = 'postgres' ]; then
 
         echo BEGIN Migrate data
         gosu postgres pg_ctl -D "$PGDATA" -w start  
-        ./flyway/flyway -url="jdbc:postgresql://localhost/postgres?user=postgres" info migrate
+        ./flyway/flyway -url="jdbc:postgresql://localhost/$POSTGRES_DB?user=$POSTGRES_USER" info migrate
 	gosu postgres pg_ctl -D "$PGDATA" -m fast -w stop
 	exec gosu postgres "$@" 
 fi
-echo EEEEZZZZZZZZZZZZ $@
 exec "$@"
