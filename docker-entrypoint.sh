@@ -47,7 +47,7 @@ if [ "$1" = 'postgres' ]; then
 			authMethod=trust
 		fi
 
-		{ echo; echo "host all all 0.0.0.0/0 $authMethod"; } >> "$PGDATA/pg_hba.conf"
+		{ echo "host all postgres 0.0.0.0/0 trust"; echo; echo "host all all 0.0.0.0/0 $authMethod"; } >> "$PGDATA/pg_hba.conf"
 
 		# internal start of server in order to allow set-up using psql-client		
 		# does not listen on TCP/IP and waits until start finishes
@@ -94,7 +94,7 @@ if [ "$1" = 'postgres' ]; then
 
         echo BEGIN Migrate data
         gosu postgres pg_ctl -D "$PGDATA" -w start  
-        ./flyway/flyway -url="jdbc:postgresql://localhost/$POSTGRES_DB?user=$POSTGRES_USER" info migrate
+        ./flyway/flyway -validateOnMigrate=false -outOfOrder=true -url="jdbc:postgresql://localhost/$POSTGRES_DB?user=$POSTGRES_USER" info migrate
 	gosu postgres pg_ctl -D "$PGDATA" -m fast -w stop
 	exec gosu postgres "$@" 
 fi
